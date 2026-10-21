@@ -11,11 +11,7 @@
     h1 { text-align: center; color: #38bdf8; margin-bottom: 4px; font-size: 1.6rem; }
     p.subtitle { text-align: center; color: #94a3b8; font-size: 0.9rem; margin-top: 0; margin-bottom: 24px; }
 
-    .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #1e293b; padding: 12px 16px; border-radius: 8px; border: 1px solid #334155; }
-    .nav-link { color: #38bdf8; text-decoration: none; font-weight: bold; font-size: 0.95rem; }
-    .nav-link:hover { text-decoration: underline; }
-
-    .section-title { color: #f1f5f9; font-size: 1.2rem; border-bottom: 2px solid #334155; padding-bottom: 8px; margin-top: 28px; margin-bottom: 16px; }
+    .section-title { color: #f1f5f9; font-size: 1.2rem; border-bottom: 2px solid #334155; padding-bottom: 8px; margin-top: 24px; margin-bottom: 16px; }
 
     /* Tables */
     .table-container { overflow-x: auto; background: #1e293b; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px; }
@@ -31,7 +27,7 @@
     .clickable-row:hover td { color: #fff; }
 
     .rank-col { width: 60px; font-weight: bold; color: #f59e0b; }
-    .score-col { font-weight: bold; color: #4ade80; }
+    .score-col { font-weight: bold; color: #4ade80; text-align: right; padding-right: 24px; }
 
     /* Standings Grid */
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -50,21 +46,18 @@
     .close-btn { background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; font-weight: bold; }
     .close-btn:hover { color: #fff; }
 
-    .diff-badge { font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; display: inline-block; min-width: 24px; text-align: center; }
-    .diff-perfect { background: #166534; color: #4ade80; }
-    .diff-close { background: #854d0e; color: #fde047; }
-    .diff-far { background: #991b1b; color: #fca5a5; }
+    /* 4-Tier Badges */
+    .diff-badge { font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; display: inline-block; min-width: 26px; text-align: center; }
+    .diff-perfect { background: #0284c7; color: #e0f2fe; } /* Blue: 0 off (Spot On) */
+    .diff-close   { background: #166534; color: #4ade80; } /* Green: 1-2 off (Close) */
+    .diff-medium  { background: #854d0e; color: #fde047; } /* Yellow: 3-4 off (Less Close) */
+    .diff-far     { background: #991b1b; color: #fca5a5; } /* Red: 5+ off (Not Close At All) */
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🏀 NBA Standings Predictor</h1>
     <p class="subtitle">Live Pool Leaderboard & Current NBA Standings</p>
-
-    <div class="nav-bar">
-      <span>Pool Status: <strong>Active</strong></span>
-      <a href="nba_submit.html" class="nav-link"> Submit / Edit Picks →</a>
-    </div>
 
     <div id="loading-state">
       <div class="spinner"></div>
@@ -85,8 +78,7 @@
             <tr>
               <th class="rank-col">Rank</th>
               <th>Participant</th>
-              <th>Off-Points</th>
-              <th>Evaluated</th>
+              <th style="text-align: right; padding-right: 24px;">Off-Points</th>
             </tr>
           </thead>
           <tbody id="leaderboard-body"></tbody>
@@ -239,16 +231,15 @@
     function renderLeaderboard(leaderboard) {
       const tbody = document.getElementById('leaderboard-body');
       if (!leaderboard || leaderboard.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">No picks submitted yet. Be the first!</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No picks submitted yet.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = leaderboard.map((row, idx) => `
-        <tr class="clickable-row" onclick="openParticipantModal(${idx})">
+      tbody.innerHTML = leaderboard.map((row) => `
+        <tr class="clickable-row" onclick="openParticipantModal(${row.rank - 1})">
           <td class="rank-col">#${row.rank}</td>
           <td><strong>${escapeHtml(row.name)}</strong></td>
           <td class="score-col">${row.score} pts</td>
-          <td>${row.evaluated} / 30</td>
         </tr>
       `).join('');
     }
@@ -284,12 +275,19 @@
         if (actualRank) {
           actualDisplay = `#${actualRank}`;
           const diff = Math.abs(predRank - actualRank);
+          
           if (diff === 0) {
             pointsDisplay = "0";
-            badgeClass = "diff-perfect";
+            badgeClass = "diff-perfect"; // Blue: Spot on
           } else {
             pointsDisplay = `+${diff}`;
-            badgeClass = diff <= 2 ? "diff-close" : "diff-far";
+            if (diff <= 2) {
+              badgeClass = "diff-close";  // Green: Close
+            } else if (diff <= 4) {
+              badgeClass = "diff-medium"; // Yellow: Less close
+            } else {
+              badgeClass = "diff-far";    // Red: Not close at all
+            }
           }
         }
 
